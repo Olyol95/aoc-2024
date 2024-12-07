@@ -49,45 +49,19 @@ sub next_location {
     };
 }
 
-sub rotated_location {
-    my $self = shift;
-
-    my $dir = $self->_rotate;
-
-    return {
-        x  => $self->x + $dir->{x},
-        y  => $self->y + $dir->{y},
-        dx => $dir->{x},
-        dy => $dir->{y},
-    };
-}
-
 sub rotate {
     my $self = shift;
 
-    my $dir = $self->_rotate;
-
-    $self->_dx($dir->{x});
-    $self->_dy($dir->{y});
-
-    $self->_record_location;
-}
-
-sub _rotate {
-    my $self = shift;
-
-    my %dir;
-
     if ($self->_dy != 0) {
-        $dir{x} = $self->_dy * -1;
-        $dir{y} = 0;
+        $self->_dx($self->_dy * -1);
+        $self->_dy(0);
     }
     else {
-        $dir{y} = $self->_dx;
-        $dir{x} = 0;
+        $self->_dy($self->_dx);
+        $self->_dx(0);
     }
 
-    return \%dir;
+    $self->_record_location;
 }
 
 sub move {
