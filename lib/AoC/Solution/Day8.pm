@@ -10,27 +10,24 @@ with 'AoC::Solution';
 sub part_1 {
     my $self = shift;
 
-    my %antinodes;
-
-    foreach my $freq (values %{ $self->input->{antennas} }) {
-        %antinodes = (
-            %antinodes,
-            %{ $self->_find_antinodes($freq) },
-        );
-    }
-
-    return scalar keys %antinodes;
+    return $self->_unique_antinodes;
 }
 
 sub part_2 {
     my $self = shift;
 
+    return $self->_unique_antinodes(1);
+}
+
+sub _unique_antinodes {
+    my ($self, $harmonics) = @_;
+
     my %antinodes;
 
     foreach my $freq (values %{ $self->input->{antennas} }) {
         %antinodes = (
             %antinodes,
-            %{ $self->_find_antinodes($freq, 1) },
+            %{ $self->_find_antinodes($freq, $harmonics) },
         );
     }
 
@@ -41,41 +38,40 @@ sub _find_antinodes {
     my ($self, $antennas, $harmonics) = @_;
 
     my %antinodes;
-    for (my $idx_a = 0; $idx_a < @$antennas; $idx_a++) {
-        my $a = $antennas->[$idx_a];
-        for (my $idx_b = 0; $idx_b < @$antennas; $idx_b++) {
-            next if $idx_a == $idx_b;
-            my $b = $antennas->[$idx_b];
-            my $vec = {
-                x => $b->{x} - $a->{x},
-                y => $b->{y} - $a->{y},
+    foreach my $pair (@{ $self->_pairs($antennas) }) {
+        my ($a, $b) = @$pair;
+        my $vec = {
+            x => $b->{x} - $a->{x},
+            y => $b->{y} - $a->{y},
+        };
+        my $antinode = {
+            x => $a->{x} + $vec->{x} * ($harmonics ? 1 : 2),
+            y => $a->{y} + $vec->{y} * ($harmonics ? 1 : 2),
+        };
+        while ($self->_is_on_grid($antinode)) {
+            $antinodes{$self->_key($antinode)} = 1;
+            $antinode = {
+                x => $antinode->{x} + $vec->{x},
+                y => $antinode->{y} + $vec->{y},
             };
-            if ($harmonics) {
-                my $antinode = {
-                    x => $a->{x} + $vec->{x},
-                    y => $a->{y} + $vec->{y},
-                };
-                $antinodes{join(",", $antinode->{x}, $antinode->{y})} = 1 if $self->_is_on_grid($antinode);
-                while (1) {
-                    $antinode = {
-                        x => $antinode->{x} + $vec->{x},
-                        y => $antinode->{y} + $vec->{y},
-                    };
-                    last unless $self->_is_on_grid($antinode);
-                    $antinodes{join(',', $antinode->{x}, $antinode->{y})} = 1;
-                }
-            }
-            else {
-                my $antinode = {
-                    x => $a->{x} + $vec->{x} * 2,
-                    y => $a->{y} + $vec->{y} * 2,
-                };
-                $antinodes{join(",", $antinode->{x}, $antinode->{y})} = 1 if $self->_is_on_grid($antinode);
-            }
+            last unless $harmonics;
         }
     }
 
     return \%antinodes;
+}
+
+sub _pairs {
+    my ($self, $arr) = @_;
+
+    my @pairs;
+    for (my $idx_a = 0; $idx_a < @$arr; $idx_a++) {
+        for (my $idx_b = 0; $idx_b < @$arr; $idx_b++) {
+            push @pairs, [$arr->[$idx_a], $arr->[$idx_b]] unless $idx_a == $idx_b;
+        }
+    }
+
+    return \@pairs;
 }
 
 sub _is_on_grid {
@@ -85,6 +81,12 @@ sub _is_on_grid {
         && $point->{x} < $self->input->{width}
         && $point->{y} >= 0
         && $point->{y} < $self->input->{height};
+}
+
+sub _key {
+    my ($self, $point) = @_;
+
+    return join(',', $point->{x}, $point->{y});
 }
 
 sub _parse_input {
