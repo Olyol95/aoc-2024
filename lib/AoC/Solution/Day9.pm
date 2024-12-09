@@ -10,9 +10,9 @@ with 'AoC::Solution';
 sub part_1 {
     my $self = shift;
 
-    my $idx = 0;
     my @disk = @{ $self->input };
 
+    my $idx = 0;
     while ($idx < @disk) {
         if ($self->_space_at($idx, \@disk)) {
             my $char;
@@ -30,32 +30,32 @@ sub part_2 {
 
     my @disk = @{ $self->input };
 
-    my $files = $self->_files;
-    for (my $file_id = @$files - 1; $file_id >= 0; $file_id--) {
-        my $idx = 0;
-        my $file = $files->[$file_id];
+    my %last_idx;
+    my $files = $self->_files(\@disk);
+    my $file_id = scalar @$files - 1;
+    foreach my $file (reverse @$files) {
         my $length = scalar @$file;
-        while ($idx < $file->[0]) {
+        for (my $idx = $last_idx{$length} || 0; $idx < $file->[0]; $idx++) {
             my $space = $self->_space_at($idx, \@disk);
             if ($space >= $length) {
                 $disk[$idx + $_] = $file_id for 0..$length - 1;
                 $disk[$_] = '.' foreach @$file;
+                $last_idx{$length} = $idx;
                 last;
             }
-            $idx++;
+            $idx += $space;
         }
+        $file_id--;
     }
 
     return $self->_checksum(\@disk);
 }
 
 sub _files {
-    my $self = shift;
-
-    my $idx = 0;
-    my $disk = $self->input;
+    my ($self, $disk) = @_;
 
     my @files;
+    my $idx = 0;
     while ($idx < @$disk) {
         if ($disk->[$idx] ne '.') {
             push @{ $files[$disk->[$idx]] }, $idx;
